@@ -1,0 +1,97 @@
+name: tests
+
+on:
+  push:
+    branches:
+      - 'main'
+    tags:
+      - '*'
+  workflow_dispatch: {}
+
+jobs:
+
+  unit-tests:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+    # - name: run unit tests
+    #   run: echo "test" > coverage.unit.out
+
+    - name: collect test coverage
+      uses: actions/upload-artifact@v3
+      with:
+        name: coverage
+        path: coverage.unit.out
+
+  integration-tests-enterprise-postgres:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+    # - name: run enterprise-postgres tests
+    #   run: echo "test" > coverage.enterprisepostgres.out
+
+    - name: collect test coverage
+      uses: actions/upload-artifact@v3
+      with:
+        name: coverage
+        path: coverage.enterprisepostgres.out
+
+  integration-tests-dbless:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+    # - name: run integration tests
+    #   run: echo "test" > coverage.dbless.out
+
+    - name: collect test coverage
+      uses: actions/upload-artifact@v3
+      with:
+        name: coverage
+        path: coverage.dbless.out
+
+  integration-tests-postgres:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+    # - name: run integration tests
+    #   run: echo "test" > coverage.postgres.out
+
+    - name: collect test coverage
+      uses: actions/upload-artifact@v3
+      with:
+        name: coverage
+        path: coverage.postgres.out
+
+  coverage:
+    environment: "Configure ci"
+    needs:
+      - "unit-tests"
+      - "integration-tests-dbless"
+      - "integration-tests-postgres"
+      - "integration-tests-enterprise-postgres"
+    runs-on: ubuntu-latest
+    steps:
+
+    - name: collect test coverage artifacts
+      id: download-coverage
+      uses: actions/download-artifact@v3
+      with:
+        name: coverage
+        path: coverage
+
+    - name: Display structure of downloaded files
+      run: ls -R
+      working-directory: ${{steps.download-coverage.outputs.download-path}}
+
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        name: combined-coverage
+        token: ${{ secrets.CODECOV_TOKEN }}
+        directory: ${{steps.download-coverage.outputs.download-path}}
+        fail_ci_if_error: true
+        verbose: true
